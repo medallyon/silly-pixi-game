@@ -1,5 +1,5 @@
 import { Howl } from "howler";
-import { Assets, Container, Sprite, Graphics } from "pixi.js";
+import { Container, Sprite, Graphics } from "pixi.js";
 import { Tween, Easing } from "tweedle.js";
 
 const FLIP_DURATION = 350;
@@ -12,6 +12,9 @@ const SKEW_AMOUNT = [0.25, 0.35]; // radians to skew on flip
 
 export class Card extends Container
 {
+	private static suits = ['hearts', 'diamonds', 'clubs', 'spades'];
+	private static values = new Array(13).fill(0).map((_, i) => (i + 1).toString()); // 1-13
+
 	private frontSprite: Sprite;
 	private backSprite: Sprite;
 	private isFlipped = false;
@@ -20,28 +23,6 @@ export class Card extends Container
 
 	private readonly hoverSound: Howl
 	private readonly flipSound: Howl;
-
-	private static suits = ['hearts', 'diamonds', 'clubs', 'spades'];
-	private static values = new Array(13).fill(0).map((_, i) => (i + 1).toString()); // 1-13
-
-	public static gatherAssets(): string[]
-	{
-		const assetNames = this.suits.flatMap(suit =>
-			this.values.map(value => [
-				`card_${suit}-${value}`,
-				`/assets/card-deck-fronts/sheet_${suit}/sheet_${suit}-${value}.png`
-			])
-		);
-
-		assetNames.push(["cardback", "/assets/colorful-poker-card-back/red.png"]);
-		assetNames.push(["sfx_card_hover", "/assets/audio/hover-card.mp3"]);
-		assetNames.push(["sfx_whoosh", "/assets/audio/whoosh.mp3"]);
-
-		for (const [name, path] of assetNames)
-			Assets.add({ alias: name, src: path });
-
-		return assetNames.map(([name]) => name);
-	}
 
 	constructor()
 	{
@@ -98,37 +79,6 @@ export class Card extends Container
 		const randomValue = Card.values[Math.floor(Math.random() * Card.values.length)];
 
 		return Sprite.from(`card_${randomSuit}-${randomValue}`);
-	}
-
-	private onPointerOver(): void
-	{
-		if (this.isAnimating)
-			return;
-
-		this.hoverSound.rate(Math.random() * 0.1 + 0.75);
-		this.hoverSound.seek(0.04);
-		this.hoverSound.play();
-
-		const hoverScale = HOVER_SCALE_PERCENT[Math.floor(Math.random() * HOVER_SCALE_PERCENT.length)];
-		this.scaleTween = new Tween(this.scale)
-			.to({ x: 1 + hoverScale, y: 1 + hoverScale }, 20)
-			.easing(Easing.Back.Out)
-			.start();
-	}
-
-	private onPointerOut(): void
-	{
-		if (this.isAnimating)
-			return;
-
-		this.hoverSound.rate(Math.random() * 0.1 - -0.75);
-		this.hoverSound.seek(-0.04);
-		this.hoverSound.play();
-
-		this.scaleTween = new Tween(this.scale)
-			.to({ x: 1, y: 1 }, 20)
-			.easing(Easing.Cubic.Out)
-			.start();
 	}
 
 	public flip(): void

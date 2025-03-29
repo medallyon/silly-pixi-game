@@ -12,7 +12,9 @@ export class AceOfShadows extends Screen
 	constructor()
 	{
 		super();
-		this.addChild(new BackButton());
+		const backButton = new BackButton();
+		backButton.position.set(30, 70); // Position under FPS counter
+		this.addChild(backButton);
 	}
 
 	public show(): void

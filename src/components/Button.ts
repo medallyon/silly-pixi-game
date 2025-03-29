@@ -8,6 +8,7 @@ export interface ButtonOptions
 	width?: number;
 	height?: number;
 	fontSize?: number;
+	imageKey?: string;
 	onClick?: () => void;
 }
 
@@ -23,14 +24,13 @@ export class Button extends Container
 		this.loadFontAndCreateText(options);
 	}
 
-	private async loadFontAndCreateText({ text, width = 200, height = 50, fontSize, onClick }: ButtonOptions)
+	private async loadFontAndCreateText({ text, width = 200, height = 50, fontSize, onClick, imageKey }: ButtonOptions)
 	{
 		const container = new Container();
 		container.pivot.set(width / 2, height / 2);
 
-		const buttonTexture = Assets.get("button");
-		const buttonPressedTexture = Assets.get("button-pressed");
-		const buttonSprite = new Sprite(buttonTexture);
+		// Use imageKey if provided, otherwise use default button textures
+		const buttonSprite = new Sprite(imageKey ? Assets.get(imageKey) : Assets.get("button"));
 		buttonSprite.width = width;
 		buttonSprite.height = height;
 		container.addChild(buttonSprite);
@@ -45,19 +45,22 @@ export class Button extends Container
 			console.error('Failed to load font:', error);
 		}
 
-		const textSprite = new Text({
-			text,
-			style: {
-				fontFamily: "font-ui, Arial",
-				fontSize,
-				fill: 0xFFFFFF,
-				align: "center"
-			},
-		});
+		if (text)
+		{
+			const textSprite = new Text({
+				text,
+				style: {
+					fontFamily: "font-ui, Arial",
+					fontSize,
+					fill: 0xFFFFFF,
+					align: "center"
+				},
+			});
 
-		textSprite.anchor.set(0.5);
-		textSprite.position.set(width / 2, height / 2);
-		container.addChild(textSprite);
+			textSprite.anchor.set(0.5);
+			textSprite.position.set(width / 2, height / 2);
+			container.addChild(textSprite);
+		}
 
 		// Set up hit area for the button
 		container.eventMode = 'static';
@@ -66,7 +69,9 @@ export class Button extends Container
 
 		const pixiButton = new PixiButton(container);
 
-		this.setupInteractivity(pixiButton, onClick, buttonSprite, buttonTexture, buttonPressedTexture);
+		// If imageKey is provided, use its pressed variant, otherwise use default pressed texture
+		const pressedTexture = imageKey ? Assets.get(imageKey + "-pressed") : Assets.get("button-pressed");
+		this.setupInteractivity(pixiButton, onClick, buttonSprite, buttonSprite.texture, pressedTexture);
 		this.addChild(container);
 	}
 

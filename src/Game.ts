@@ -1,4 +1,4 @@
-import { Application, Assets, Container, ExtensionType, Texture, extensions } from "pixi.js";
+import { Application, Container, ExtensionType, Texture, extensions } from "pixi.js";
 import { Group } from "tweedle.js";
 import { Menu } from "./screens/Menu";
 import { FpsCounter } from "./components/FpsCounter";
@@ -13,12 +13,10 @@ const TARGET_WIDTH = 1920;
 const TARGET_HEIGHT = 1080;
 const ASPECT_RATIO = TARGET_WIDTH / TARGET_HEIGHT;
 
-interface ComponentConstructor
-{
-	new(...args: any[]): Container;
-	gatherAssets?(): string[];
-	update?(deltaTime?: number): void;
-}
+// We use a more generic type that allows any constructor that returns a Container
+type ComponentConstructor = {
+	new(...args: unknown[]): Container
+} & { update?(deltaTime: number): void };
 
 const components: ComponentConstructor[] = [FpsCounter, Card, CardDeck, DiscardPile, LoadingScreen, Dialogue, Fire];
 const updateMethods: ((deltaTime: number) => void)[] = [];
@@ -154,19 +152,6 @@ export default abstract class Game
 
 		setupAssetParser();
 
-		Assets.addBundle('ui-kit', [
-			{ alias: "font-ui", src: "/assets/fonts/Gluten-VariableFont.ttf" },
-			{ alias: "button", src: "/assets/cozy-garden-kit/big-bar.png" },
-			{ alias: "button-pressed", src: "/assets/cozy-garden-kit/big-bar-pressed.png" },
-			{ alias: "button-back", src: "/assets/cozy-garden-kit/button-back.png" },
-			{ alias: "button-back-pressed", src: "/assets/cozy-garden-kit/button-back-pressed.png" },
-			{ alias: "bg-blue", src: "/assets/cozy-garden-kit/bg-blue.png" },
-			{ alias: "bg-green", src: "/assets/cozy-garden-kit/bg-green.png" },
-			{ alias: "bg-pink", src: "/assets/cozy-garden-kit/bg-pink.png" },
-			{ alias: "bg-yellow", src: "/assets/cozy-garden-kit/bg-yellow.png" },
-		]);
-		await Assets.loadBundle('ui-kit');
-
 		app.ticker.add((ticker) =>
 		{
 			for (const updateMethod of updateMethods)
@@ -175,15 +160,15 @@ export default abstract class Game
 			Group.shared.update(ticker.elapsedMS);
 		});
 
-		// Create loading screen
 		const loadingScreen = new LoadingScreen(components, () =>
 		{
 			Game.instantiateComponent(FpsCounter);
-			// Create and show menu
+
 			this.menu = new Menu();
 			app.stage.addChild(this.menu);
 			this.menu.show();
 		});
+
 		app.stage.addChild(loadingScreen);
 		loadingScreen.show();
 	}
@@ -222,8 +207,6 @@ export default abstract class Game
 	public static showMenu(): void
 	{
 		if (this.menu)
-		{
 			this.menu.show();
-		}
 	}
 }

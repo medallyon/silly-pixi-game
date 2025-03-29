@@ -19,16 +19,6 @@ export class Fire extends ParticleEffect
 		});
 	}
 
-	public static gatherAssets(): string[]
-	{
-		const assetNames = Fire.textureNames.map((name) => [name, `/assets/particles/${name}`] as const);
-
-		for (const [name, path] of assetNames)
-			Assets.add({ alias: name, src: path });
-
-		return assetNames.map(([name]) => name);
-	}
-
 	protected createParticle(): Particle
 	{
 		if (Fire.textures.length === 0)

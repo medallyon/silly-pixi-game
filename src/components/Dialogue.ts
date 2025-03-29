@@ -60,20 +60,6 @@ export class Dialogue extends Container
 		this.pivot.set(Dialogue.WIDTH / 2, Dialogue.LINE_HEIGHT / 2);
 	}
 
-	public static gatherAssets(): string[]
-	{
-		const assetNames = [
-			["gibberish-01", "/assets/audio/talking/gibberish-01.mp3"],
-			["gibberish-02", "/assets/audio/talking/gibberish-02.mp3"],
-			["gibberish-03", "/assets/audio/talking/gibberish-03.mp3"]
-		];
-
-		for (const [name, path] of assetNames)
-			Assets.add({ alias: name, src: path });
-
-		return assetNames.map(([name]) => name);
-	}
-
 	/**
 	 * Load the dialogue data and preload assets.
 	 * @param data The dialogue data to load.

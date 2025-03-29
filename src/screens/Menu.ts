@@ -15,6 +15,11 @@ export class Menu extends Screen
 	private readonly BUTTON_WIDTH = 300;
 	private readonly BUTTON_HEIGHT = 60;
 	private readonly BUTTON_SPACING = 20;
+	private static combinedScreens?: {
+		fire: PhoenixFlame;
+		cards: AceOfShadows;
+		dialogue: MagicWords;
+	};
 
 	constructor()
 	{
@@ -100,6 +105,7 @@ export class Menu extends Screen
 		{
 			this.currentScreen.hide();
 			Game.app.stage.removeChild(this.currentScreen);
+			this.currentScreen = undefined;
 		}
 
 		if (ScreenClass === null)
@@ -117,19 +123,24 @@ export class Menu extends Screen
 			dialogue.show();
 			Game.app.stage.addChild(dialogue);
 
-			// Create a back button for combined view using Button component
+			// Store references to combined screens
+			Menu.combinedScreens = { fire, cards, dialogue };
+
+			// Create a back button for combined view
 			const backButton = new BackButton(() =>
 			{
-				fire.hide();
-				cards.hide();
-				dialogue.hide();
-				Game.app.stage.removeChild(fire);
-				Game.app.stage.removeChild(cards);
-				Game.app.stage.removeChild(dialogue);
-				Game.app.stage.removeChild(backButton);
-				this.show();
+				// Clean up combined screens on back button click
+				if (Menu.combinedScreens)
+				{
+					Object.values(Menu.combinedScreens).forEach(screen =>
+					{
+						screen.hide();
+						Game.app.stage.removeChild(screen);
+					});
+					Menu.combinedScreens = undefined;
+				}
 			});
-
+			backButton.position.set(30, 70);
 			Game.app.stage.addChild(backButton);
 			this.hide();
 			return;
