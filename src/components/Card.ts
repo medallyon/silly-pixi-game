@@ -1,3 +1,4 @@
+import { Howl } from "howler";
 import { Assets, Container, Sprite, Graphics } from "pixi.js";
 import { Tween, Easing } from "tweedle.js";
 
@@ -17,6 +18,9 @@ export class Card extends Container
 	private isAnimating = false;
 	private scaleTween: Tween<{ x: number, y: number }> | null = null;
 
+	private readonly hoverSound: Howl
+	private readonly flipSound: Howl;
+
 	private static suits = ['hearts', 'diamonds', 'clubs', 'spades'];
 	private static values = new Array(13).fill(0).map((_, i) => (i + 1).toString()); // 1-13
 
@@ -30,6 +34,8 @@ export class Card extends Container
 		);
 
 		assetNames.push(["cardback", "/assets/colorful-poker-card-back/red.png"]);
+		assetNames.push(["sfx_card_hover", "/assets/audio/hover-card.mp3"]);
+		assetNames.push(["sfx_whoosh", "/assets/audio/whoosh.mp3"]);
 
 		for (const [name, path] of assetNames)
 			Assets.add({ alias: name, src: path });
@@ -40,6 +46,18 @@ export class Card extends Container
 	constructor()
 	{
 		super();
+
+		this.hoverSound = new Howl({
+			src: ['/assets/audio/hover-card.mp3'],
+			volume: 0.3,
+			preload: true,
+		});
+
+		this.flipSound = new Howl({
+			src: ['/assets/audio/whoosh.mp3'],
+			volume: 0.2,
+			preload: true,
+		});
 
 		this.backSprite = Sprite.from('cardback');
 		this.frontSprite = Card.createRandomCardFront();
@@ -57,6 +75,9 @@ export class Card extends Container
 		this.eventMode = 'static';
 		this.cursor = 'pointer';
 		this.onpointertap = this.flip.bind(this);
+
+		this.onmouseover = this.onPointerOver.bind(this);
+		this.onmouseout = this.onPointerOut.bind(this);
 	}
 
 	private static createRandomCardFront(): Sprite
@@ -65,6 +86,37 @@ export class Card extends Container
 		const randomValue = Card.values[Math.floor(Math.random() * Card.values.length)];
 
 		return Sprite.from(`card_${randomSuit}-${randomValue}`);
+	}
+
+	private onPointerOver(): void
+	{
+		if (this.isAnimating)
+			return;
+
+		this.hoverSound.rate(Math.random() * 0.1 + 0.75);
+		this.hoverSound.seek(0.04);
+		this.hoverSound.play();
+
+		const hoverScale = HOVER_SCALE_PERCENT[Math.floor(Math.random() * HOVER_SCALE_PERCENT.length)];
+		this.scaleTween = new Tween(this.scale)
+			.to({ x: 1 + hoverScale, y: 1 + hoverScale }, 20)
+			.easing(Easing.Back.Out)
+			.start();
+	}
+
+	private onPointerOut(): void
+	{
+		if (this.isAnimating)
+			return;
+
+		this.hoverSound.rate(Math.random() * 0.1 - -0.75);
+		this.hoverSound.seek(-0.04);
+		this.hoverSound.play();
+
+		this.scaleTween = new Tween(this.scale)
+			.to({ x: 1, y: 1 }, 20)
+			.easing(Easing.Cubic.Out)
+			.start();
 	}
 
 	public flip(): void
@@ -76,6 +128,9 @@ export class Card extends Container
 		// Reset scale from any hover effect
 		this.scaleTween?.stop();
 		this.scale.set(1);
+
+		this.flipSound.rate(Math.random() * 0.1 + 0.75);
+		this.flipSound.play();
 
 		const currentSprite = this.isFlipped ? this.frontSprite : this.backSprite;
 		const nextSprite = this.isFlipped ? this.backSprite : this.frontSprite;
