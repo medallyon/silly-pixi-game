@@ -14,7 +14,7 @@ export abstract class Deck extends Container
 	protected cardCount: number = 0;
 	protected countText: Text;
 
-	protected static readonly CARD_SPACING = 2;
+	protected static readonly CARD_SPACING = 20;
 
 	/**
 	 * Create a new Deck instance.
@@ -39,6 +39,8 @@ export abstract class Deck extends Container
 		this.countText.anchor.set(0.5);
 		this.countText.y = 130;
 		this.addChild(this.countText);
+
+		this.sortableChildren = true;
 	}
 
 	/**
@@ -76,8 +78,6 @@ export abstract class Deck extends Container
 
 	/**
 	 * Add a new top card to the deck.
-	 * If there is already a top card, it is removed first.
-	 * If the card count is greater than 1, a bottom card is also added.
 	 */
 	protected addNewTopCard(): void
 	{
@@ -85,12 +85,16 @@ export abstract class Deck extends Container
 			this.removeChild(this.topCard);
 
 		this.topCard = new Card();
+		this.topCard.position.y = -Deck.CARD_SPACING;
+		this.topCard.rotation = (Math.random() - 0.5) * 0.1;
+		this.topCard.zIndex = 1;
 		this.addChild(this.topCard);
 
 		if (!this.bottomCard && this.cardCount > 1)
 		{
 			this.bottomCard = new Card();
-			this.bottomCard.position.y = Deck.CARD_SPACING;
+			this.bottomCard.position.y = 0;
+			this.bottomCard.zIndex = 0;
 			this.addChild(this.bottomCard);
 		}
 	}
@@ -107,14 +111,22 @@ export abstract class Deck extends Container
 		this.removeChild(this.topCard);
 		this.topCard = null;
 
-		// If we have a bottom card and only one card left, remove bottom card
-		if (this.bottomCard && this.cardCount <= 1)
+		if (this.bottomCard)
 		{
-			this.removeChild(this.bottomCard);
-			this.bottomCard = null;
+			if (this.cardCount <= 1)
+			{
+				// If only one card left, remove bottom card
+				this.removeChild(this.bottomCard);
+				this.bottomCard = null;
+			} else
+			{
+				// Make bottom card the new top card with offset and rotation
+				this.topCard = this.bottomCard;
+				this.bottomCard = null;
+				this.topCard.position.y = -Deck.CARD_SPACING;
+				this.topCard.rotation = (Math.random() - 0.5) * 0.1;
+				this.topCard.zIndex = 1;
+			}
 		}
 	}
-
-	public update(deltaTime: number): void
-	{ }
 }

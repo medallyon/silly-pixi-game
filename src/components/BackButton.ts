@@ -1,6 +1,5 @@
 import { Button } from "./Button";
 import Game from "../Game";
-import { Screen } from "../screens/Screen";
 
 export class BackButton extends Button
 {

@@ -15,7 +15,7 @@ export class PhoenixFlame extends Screen
 	constructor()
 	{
 		super();
-		const backButton = new BackButton();
+		const backButton = new BackButton(this.hide.bind(this));
 		backButton.position.set(30, 70); // Position under FPS counter
 		this.addChild(backButton);
 	}

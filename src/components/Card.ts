@@ -6,7 +6,6 @@ const FLIP_DURATION = 350;
 const CARD_WIDTH = 140;
 const CARD_HEIGHT = 190;
 const CORNER_RADIUS = 10;
-const HOVER_SCALE_PERCENT = [0.1, 0.15]; // 10-15% on hover
 const BOUNCE_HEIGHT = [40, 60]; // pixels to bounce up on flip
 const SKEW_AMOUNT = [0.25, 0.35]; // radians to skew on flip
 
@@ -21,18 +20,11 @@ export class Card extends Container
 	private isAnimating = false;
 	private scaleTween: Tween<{ x: number, y: number }> | null = null;
 
-	private readonly hoverSound: Howl
 	private readonly flipSound: Howl;
 
 	constructor()
 	{
 		super();
-
-		this.hoverSound = new Howl({
-			src: ['/assets/audio/hover-card.mp3'],
-			volume: 0.3,
-			preload: true,
-		});
 
 		this.flipSound = new Howl({
 			src: ['/assets/audio/whoosh.mp3'],

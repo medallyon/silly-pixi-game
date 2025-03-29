@@ -12,7 +12,7 @@ export class AceOfShadows extends Screen
 	constructor()
 	{
 		super();
-		const backButton = new BackButton();
+		const backButton = new BackButton(this.hide.bind(this));
 		backButton.position.set(30, 70); // Position under FPS counter
 		this.addChild(backButton);
 	}
@@ -37,7 +37,6 @@ export class AceOfShadows extends Screen
 		);
 		this.addChild(this.cardDeck);
 
-		// Add to update loop
 		Game.registerUpdateMethod(this.update.bind(this));
 	}
 

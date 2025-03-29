@@ -9,8 +9,8 @@ export class Fire extends ParticleEffect
 	constructor(options: ParticleEffectOptions = {})
 	{
 		super({
-			maxParticles: 50,
-			emitRate: 0.02,
+			maxParticles: 10,
+			emitRate: 0.1,
 			gravity: -150,
 			startScale: 0.5,
 			endScale: 0,

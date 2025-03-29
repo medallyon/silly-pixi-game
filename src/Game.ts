@@ -18,7 +18,9 @@ type ComponentConstructor = {
 	new(...args: unknown[]): Container
 } & { update?(deltaTime: number): void };
 
+/* eslint-disable */
 const components: ComponentConstructor[] = [FpsCounter, Card, CardDeck, DiscardPile, LoadingScreen, Dialogue, Fire];
+/* eslint-enable */
 const updateMethods: ((deltaTime: number) => void)[] = [];
 
 function setupAssetParser()

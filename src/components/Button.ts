@@ -31,6 +31,7 @@ export class Button extends Container
 
 		// Use imageKey if provided, otherwise use default button textures
 		const buttonSprite = new Sprite(imageKey ? Assets.get(imageKey) : Assets.get("button"));
+		buttonSprite.tint = 0xAAAAAA;
 		buttonSprite.width = width;
 		buttonSprite.height = height;
 		container.addChild(buttonSprite);
