@@ -59,6 +59,22 @@ export class Card extends Container
 			preload: true,
 		});
 
+		// Round off the corners of the Card
+		const mask = new Graphics()
+			.roundRect(
+				-CARD_WIDTH / 2,
+				-CARD_HEIGHT / 2,
+				CARD_WIDTH,
+				CARD_HEIGHT,
+				CORNER_RADIUS
+			)
+			.fill({
+				color: 0xFFFFFF,
+			});
+
+		this.mask = mask;
+		this.addChild(mask);
+
 		this.backSprite = Sprite.from('cardback');
 		this.frontSprite = Card.createRandomCardFront();
 
