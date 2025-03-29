@@ -1,11 +1,12 @@
 import { Application, Container, Assets } from "pixi.js";
 
 import { Card } from "./components/Card";
+import { ProgressBar } from "./components/ProgressBar";
 
 const REAL_PROGRESS_PERCENT = 0.5; // 50% of the progress bar is real loading
 const MIN_LOADING_TIME = 1; // Minimum loading time in seconds
 
-const components = [Card];
+const components = [Card, ProgressBar];
 const updateMethods: ((deltaTime: number) => void)[] = [];
 
 let loadingProgress = 0;
@@ -80,6 +81,21 @@ export default abstract class Game
 	{
 		const startTime = Date.now();
 
+		const progressBar = new ProgressBar({ width: 400, height: 40 });
+		progressBar.position.set(
+			(Game.app.screen.width - progressBar.width) / 2,
+			(Game.app.screen.height - progressBar.height) / 2
+		);
+		Game.app.stage.addChild(progressBar);
+
+		// Setup a ticker for smooth progress updates during loading
+		const loadingTicker = () =>
+		{
+			progressBar.update();
+		};
+
+		Game.registerUpdateMethod(loadingTicker);
+
 		const assetPromises: Promise<Record<string, unknown>>[] = [];
 		const componentsToLoad = components as ComponentConstructor[];
 
@@ -91,6 +107,10 @@ export default abstract class Game
 				const loadingPromise = Assets.load(assetNames, (progress: number) =>
 				{
 					loadingProgress += (progress - (loadingProgress / assetPromises.length)) / assetPromises.length;
+
+					// Scale real loading to only use 50% of the progress bar
+					// This reserves 50% for our artificial loading simulation
+					progressBar.progress = loadingProgress * REAL_PROGRESS_PERCENT;
 				});
 
 				assetPromises.push(loadingPromise);
@@ -101,5 +121,31 @@ export default abstract class Game
 
 		const elapsedTime = Date.now() - startTime;
 		const remainingTime = Math.max(0, MIN_LOADING_TIME * 1000 - elapsedTime);
+
+		if (remainingTime > 0)
+		{
+			const currentProgress = progressBar.targetProgress;
+
+			// Create a function to simulate loading progress over time
+			const simulateRemainingProgress = async () =>
+			{
+				const totalSteps = 20;
+				const stepTime = remainingTime / totalSteps;
+				const startValue = currentProgress;
+				const endValue = 1.0; // 100%
+				const progressIncrement = (endValue - startValue) / totalSteps;
+
+				for (let step = 1; step <= totalSteps; step++)
+				{
+					await new Promise(resolve => setTimeout(resolve, stepTime));
+					progressBar.progress = startValue + (progressIncrement * step);
+				}
+			};
+
+			await simulateRemainingProgress();
+		}
+
+		Game.app.ticker.remove(loadingTicker);
+		Game.app.stage.removeChild(progressBar);
 	}
 }
