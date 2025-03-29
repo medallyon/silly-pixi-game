@@ -1,18 +1,22 @@
 import { Container, Text, Assets, Sprite, Graphics, Color } from "pixi.js";
+import { Howl } from "howler";
 import { DialogueData, DialogueEmoji, DialogueAvatar } from "../types/dialogue";
 
 export class Dialogue extends Container
 {
-	private static readonly LINE_HEIGHT = 40;
-	private static readonly AVATAR_SIZE = 64;
-	private static readonly EMOJI_SIZE = 24;
+	private static readonly WIDTH = 600;
+	private static readonly FONT_SIZE = 28;
+	private static readonly LINE_HEIGHT = 80;
+	private static readonly AVATAR_SIZE = 128;
+	private static readonly EMOJI_SIZE = 40;
 	private static readonly PADDING = 10;
-	private static readonly TEXT_WIDTH = 400;
 	private static readonly DEFAULT_AVATAR_URL = "https://api.dicebear.com/9.x/avataaars/svg?seed=Oliver";
 	private static readonly BUBBLE_RADIUS = 15;
 	private static readonly TAIL_SIZE = 20;
-	private static readonly VERTICAL_OFFSET = 60;
+	private static readonly VERTICAL_OFFSET = 120;
 	private static readonly CHARS_PER_SECOND = 50;
+	private static readonly GIBBERISH_PITCH_RANGE = [0.5, 1.2];
+	private static readonly GIBBERISH_COUNT = 3;
 
 	private emojis: Map<string, Container> = new Map();
 	private avatars: Map<string, Sprite> = new Map();
@@ -28,16 +32,46 @@ export class Dialogue extends Container
 		originalText?: string,
 		length: number
 	}> = [];
+	private static gibberishPool: Howl[] = [];
+	private currentGibberish?: Howl;
+	private lastPlayedIndex?: number;
 
 	constructor()
 	{
 		super();
 
+		// Initialize gibberish sound pool
+		if (Dialogue.gibberishPool.length === 0)
+		{
+			for (let i = 1; i <= Dialogue.GIBBERISH_COUNT; i++)
+			{
+				Dialogue.gibberishPool.push(new Howl({
+					src: [`/assets/audio/talking/gibberish-0${i}.mp3`],
+					volume: 0.5,
+					preload: true
+				}));
+			}
+		}
+
 		this.eventMode = 'static';
 		this.cursor = 'pointer';
 		this.onpointerdown = this.handleTap.bind(this);
 
-		this.pivot.set(Dialogue.TEXT_WIDTH / 2, Dialogue.LINE_HEIGHT / 2);
+		this.pivot.set(Dialogue.WIDTH / 2, Dialogue.LINE_HEIGHT / 2);
+	}
+
+	public static gatherAssets(): string[]
+	{
+		const assetNames = [
+			["gibberish-01", "/assets/audio/talking/gibberish-01.mp3"],
+			["gibberish-02", "/assets/audio/talking/gibberish-02.mp3"],
+			["gibberish-03", "/assets/audio/talking/gibberish-03.mp3"]
+		];
+
+		for (const [name, path] of assetNames)
+			Assets.add({ alias: name, src: path });
+
+		return assetNames.map(([name]) => name);
 	}
 
 	/**
@@ -120,7 +154,7 @@ export class Dialogue extends Container
 	private createBubbleBackground(isLeft: boolean): Graphics
 	{
 		const graphics = new Graphics();
-		const width = Dialogue.TEXT_WIDTH + Dialogue.PADDING * 4;
+		const width = Dialogue.WIDTH + Dialogue.PADDING * 4;
 		const height = Dialogue.LINE_HEIGHT + Dialogue.PADDING * 2;
 		const radius = Dialogue.BUBBLE_RADIUS;
 		const tailSize = Dialogue.TAIL_SIZE;
@@ -168,7 +202,7 @@ export class Dialogue extends Container
 		return new Text({
 			text: name,
 			style: {
-				fontSize: 14,
+				fontSize: Dialogue.FONT_SIZE * 0.8,
 				fill: 0xFFFFFF,
 				align: 'center',
 				fontWeight: 'bold'
@@ -211,7 +245,7 @@ export class Dialogue extends Container
 					textContainer.y = Dialogue.PADDING + verticalOffset;
 				} else
 				{
-					avatarSprite.x = Dialogue.TEXT_WIDTH + Dialogue.PADDING * 4;
+					avatarSprite.x = Dialogue.WIDTH + Dialogue.PADDING * 4;
 					textContainer.x = Dialogue.PADDING * 2;
 					bubble.x = 0;
 					nameText.x = avatarSprite.x + Dialogue.AVATAR_SIZE / 2;
@@ -227,12 +261,13 @@ export class Dialogue extends Container
 
 		this.addChild(textContainer);
 		this.currentLine++;
+		this.playRandomGibberish();
 	}
 
 	private createTextWithEmojis(text: string): Container
 	{
 		const container = new Container();
-		const maxWidth = Dialogue.TEXT_WIDTH - Dialogue.PADDING * 2;
+		const maxWidth = Dialogue.WIDTH - Dialogue.PADDING * 2;
 		const TEXT_BASELINE_OFFSET = 4;
 
 		// Split text by emoji placeholders {emoji}
@@ -262,7 +297,7 @@ export class Dialogue extends Container
 				{
 					const tempText = new Text({
 						text: word + ' ',
-						style: { fontSize: 16, fill: 0xFFFFFF }
+						style: { fontSize: Dialogue.FONT_SIZE, fill: 0xFFFFFF }
 					});
 					words.push({
 						type: 'text',
@@ -301,7 +336,7 @@ export class Dialogue extends Container
 				{
 					const text = new Text({
 						text: '',
-						style: { fontSize: 16, fill: 0xFFFFFF }
+						style: { fontSize: Dialogue.FONT_SIZE, fill: 0xFFFFFF }
 					});
 					text.x = x;
 					text.y = currentY;
@@ -349,6 +384,7 @@ export class Dialogue extends Container
 			this.visibleCharacters = Infinity;
 			this.updateTextVisibility();
 			this.isAnimating = false;
+			this.currentGibberish?.stop();
 		} else
 			this.showNextLine();
 	}
@@ -405,6 +441,29 @@ export class Dialogue extends Container
 					item.element.text = item.originalText;
 			}
 		}
+	}
+
+	private playRandomGibberish(): void
+	{
+		// Stop any existing gibberish
+		this.currentGibberish?.stop();
+
+		// Pick a random gibberish sound that's different from the last one
+		let index;
+		do
+		{
+			index = Math.floor(Math.random() * Dialogue.GIBBERISH_COUNT);
+		} while (index === this.lastPlayedIndex);
+
+		this.lastPlayedIndex = index;
+		this.currentGibberish = Dialogue.gibberishPool[index];
+
+		// Set a random pitch
+		const pitch = Dialogue.GIBBERISH_PITCH_RANGE[0] +
+			Math.random() * (Dialogue.GIBBERISH_PITCH_RANGE[1] - Dialogue.GIBBERISH_PITCH_RANGE[0]);
+		this.currentGibberish.rate(pitch);
+
+		this.currentGibberish.play();
 	}
 
 	public update(deltaTime: number): void
