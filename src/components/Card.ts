@@ -129,4 +129,9 @@ export class Card extends Container
 
 		this.isFlipped = !this.isFlipped;
 	}
+
+	public update(deltaTime: number): void
+	{
+		Group.shared.update(deltaTime);
+	}
 }
