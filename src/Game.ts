@@ -1,33 +1,27 @@
-import { Application, Container, Assets, ExtensionType, Texture, extensions } from "pixi.js";
+import { Application, Container, ExtensionType, Texture, extensions } from "pixi.js";
 import { Group } from "tweedle.js";
-
+import { Menu } from "./screens/Menu";
 import { FpsCounter } from "./components/FpsCounter";
 import { Card } from "./components/Card";
 import { CardDeck } from "./components/CardDeck";
-import { ProgressBar } from "./components/ProgressBar";
 import { DiscardPile } from "./components/DiscardPile";
 import { Dialogue } from "./components/Dialogue";
+import { Fire } from "./components/Fire";
+import { LoadingScreen } from "./screens/LoadingScreen";
 
 const TARGET_WIDTH = 1920;
 const TARGET_HEIGHT = 1080;
 const ASPECT_RATIO = TARGET_WIDTH / TARGET_HEIGHT;
 
-const REAL_PROGRESS_PERCENT = 0.5; // 50% of the progress bar is real loading
-const MIN_LOADING_TIME = 1; // Minimum loading time in seconds
-
-const DIALOGUE_DATA_URL = "https://private-624120-softgamesassignment.apiary-mock.com/v2/magicwords";
-
-const components = [FpsCounter, Card, CardDeck, DiscardPile, ProgressBar, Dialogue];
-const updateMethods: ((deltaTime: number) => void)[] = [];
-
-let loadingProgress = 0;
-
 interface ComponentConstructor
 {
-	new(...args: unknown[]): Container;
+	new(...args: any[]): Container;
 	gatherAssets?(): string[];
 	update?(deltaTime?: number): void;
 }
+
+const components: ComponentConstructor[] = [FpsCounter, Card, CardDeck, DiscardPile, LoadingScreen, Dialogue, Fire];
+const updateMethods: ((deltaTime: number) => void)[] = [];
 
 function setupAssetParser()
 {
@@ -54,6 +48,8 @@ export default abstract class Game
 {
 	public static app: Application;
 	private static orientationOverlay: HTMLDivElement;
+	private static menu?: Menu;
+	private static canvas: HTMLCanvasElement;
 
 	/**
 	 * Register a method to be called on every frame update.
@@ -107,24 +103,6 @@ export default abstract class Game
 
 		app.canvas.style!.width = `${w}px`;
 		app.canvas.style!.height = `${h}px`;
-
-		// Update component positions
-		for (const child of app.stage.children)
-		{
-			if (child instanceof DiscardPile)
-				child.position.set(app.screen.width * 0.7, app.screen.height / 2);
-			else if (child instanceof CardDeck)
-				child.position.set(app.screen.width * 0.3, app.screen.height / 2);
-			else if (child instanceof Dialogue)
-				child.position.set(app.screen.width / 2, app.screen.height * 0.8);
-			else if (child instanceof ProgressBar)
-			{
-				child.position.set(
-					(app.screen.width - 400) / 2,
-					(app.screen.height - 40) / 2
-				);
-			}
-		}
 	}
 
 	private static createOrientationOverlay()
@@ -165,9 +143,10 @@ export default abstract class Game
 			roundPixels: true
 		});
 
+		this.canvas = app.canvas;
 		this.createOrientationOverlay();
 		await this.requestLandscapeOrientation();
-		this.handleOrientationChange(); // Initial check
+		this.handleOrientationChange();
 
 		document.getElementById("pixi-container")!.appendChild(app.canvas);
 		window.addEventListener("resize", this.onResize.bind(this));
@@ -183,35 +162,29 @@ export default abstract class Game
 			Group.shared.update(ticker.elapsedMS);
 		});
 
-		await Game.loadAssets();
-
-		Game.instantiateComponent(FpsCounter);
-
-		const discardPile = Game.instantiateComponent(DiscardPile, {
-			x: app.screen.width * 0.7,
-			y: app.screen.height / 2,
-		});
-
-		Game.instantiateComponent(CardDeck, {
-			x: app.screen.width * 0.3,
-			y: app.screen.height / 2,
-		}, [undefined, discardPile]);
-
-		const dialogue = Game.instantiateComponent(Dialogue, {
-			x: app.screen.width / 2,
-			y: app.screen.height * 0.8
-		});
-
-		// Fetch dialogue data from an endpoint
-		try
+		// Create loading screen
+		const loadingScreen = new LoadingScreen(components, () =>
 		{
-			const response = await fetch(DIALOGUE_DATA_URL);
-			const dialogueData = await response.json();
-			await dialogue.loadDialogue(dialogueData);
-		} catch (error)
-		{
-			console.error('Failed to load dialogue:', error);
-		}
+			Game.instantiateComponent(FpsCounter);
+			// Create and show menu
+			this.menu = new Menu();
+			app.stage.addChild(this.menu);
+			this.menu.show();
+		});
+		app.stage.addChild(loadingScreen);
+		loadingScreen.show();
+	}
+
+	public static getCanvasMousePosition(event: MouseEvent | Touch): { x: number, y: number }
+	{
+		const rect = this.canvas.getBoundingClientRect();
+		const scaleX = this.app.screen.width / rect.width;
+		const scaleY = this.app.screen.height / rect.height;
+
+		return {
+			x: (event.clientX - rect.left) * scaleX,
+			y: (event.clientY - rect.top) * scaleY
+		};
 	}
 
 	private static async requestLandscapeOrientation()
@@ -220,7 +193,12 @@ export default abstract class Game
 		{
 			try
 			{
-				await screen.orientation.lock('landscape');
+				// Handle potential missing lock method
+				const orientation = screen.orientation as ScreenOrientation & { lock?: (type: string) => Promise<void> };
+				if (orientation.lock)
+				{
+					await orientation.lock('landscape');
+				}
 			} catch (err)
 			{
 				console.warn('Failed to lock orientation:', err);
@@ -228,76 +206,11 @@ export default abstract class Game
 		}
 	}
 
-	/**
-	 * Load assets for the game and show a progress bar during loading.
-	 */
-	private static async loadAssets(): Promise<void>
+	public static showMenu(): void
 	{
-		const startTime = Date.now();
-
-		const progressBar = Game.instantiateComponent(ProgressBar, {
-			x: (Game.app.screen.width - 400) / 2,
-			y: (Game.app.screen.height - 40) / 2,
-		}, [{ width: 400, height: 40, text: "Loading..." }]);
-
-		// Setup a ticker for smooth progress updates during loading
-		const loadingTicker = () =>
+		if (this.menu)
 		{
-			progressBar.update();
-		};
-
-		Game.registerUpdateMethod(loadingTicker);
-
-		const assetPromises: Promise<Record<string, unknown>>[] = [];
-		const componentsToLoad = components as ComponentConstructor[];
-
-		for (const component of componentsToLoad)
-		{
-			if (typeof component.gatherAssets === "function")
-			{
-				const assetNames = component.gatherAssets();
-				const loadingPromise = Assets.load(assetNames, (progress: number) =>
-				{
-					loadingProgress += (progress - (loadingProgress / assetPromises.length)) / assetPromises.length;
-
-					// Scale real loading to only use 50% of the progress bar
-					// This reserves 50% for our artificial loading simulation
-					progressBar.progress = loadingProgress * REAL_PROGRESS_PERCENT;
-				});
-
-				assetPromises.push(loadingPromise);
-			}
+			this.menu.show();
 		}
-
-		await Promise.all(assetPromises);
-
-		const elapsedTime = Date.now() - startTime;
-		const remainingTime = Math.max(0, MIN_LOADING_TIME * 1000 - elapsedTime);
-
-		if (remainingTime > 0)
-		{
-			const currentProgress = progressBar.targetProgress;
-
-			// Create a function to simulate loading progress over time
-			const simulateRemainingProgress = async () =>
-			{
-				const totalSteps = 20;
-				const stepTime = remainingTime / totalSteps;
-				const startValue = currentProgress;
-				const endValue = 1.0; // 100%
-				const progressIncrement = (endValue - startValue) / totalSteps;
-
-				for (let step = 1; step <= totalSteps; step++)
-				{
-					await new Promise(resolve => setTimeout(resolve, stepTime));
-					progressBar.progress = startValue + (progressIncrement * step);
-				}
-			};
-
-			await simulateRemainingProgress();
-		}
-
-		Game.app.ticker.remove(loadingTicker);
-		Game.app.stage.removeChild(progressBar);
 	}
 }
