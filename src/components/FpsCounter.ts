@@ -22,6 +22,7 @@ export class FpsCounter extends Container
 
 		this._app = Game.app;
 
+		// @ts-expect-error PIXI Docs Parser struggles to understand the constructor signature
 		this._fpsText = new BitmapText({
 			text: "FPS: 0",
 			style: {

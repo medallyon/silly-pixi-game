@@ -18,9 +18,8 @@ type ComponentConstructor = {
 	new(...args: unknown[]): Container
 } & { update?(deltaTime: number): void };
 
-/* eslint-disable */
+// @ts-expect-error Classes that extend PIXI.Container are not recognized as valid constructors by TypeScript
 const components: ComponentConstructor[] = [FpsCounter, Card, CardDeck, DiscardPile, LoadingScreen, Dialogue, Fire];
-/* eslint-enable */
 const updateMethods: ((deltaTime: number) => void)[] = [];
 
 function setupAssetParser()

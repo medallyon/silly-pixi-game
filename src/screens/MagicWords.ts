@@ -12,7 +12,7 @@ export class MagicWords extends Screen
 	private dialoguePosition: { x: number, y: number };
 	private loadingBar?: ProgressBar;
 
-	constructor(dialoguePosition: { x: number | undefined, y: number | undefined })
+	constructor(dialoguePosition?: { x: number | undefined, y: number | undefined })
 	{
 		super();
 
