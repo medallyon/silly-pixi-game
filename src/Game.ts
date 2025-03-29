@@ -3,12 +3,14 @@ import { Group } from "tweedle.js";
 
 import { FpsCounter } from "./components/FpsCounter";
 import { Card } from "./components/Card";
+import { CardDeck } from "./components/CardDeck";
 import { ProgressBar } from "./components/ProgressBar";
+import { DiscardPile } from "./components/DiscardPile";
 
 const REAL_PROGRESS_PERCENT = 0.5; // 50% of the progress bar is real loading
 const MIN_LOADING_TIME = 1; // Minimum loading time in seconds
 
-const components = [Card, FpsCounter, ProgressBar];
+const components = [FpsCounter, Card, CardDeck, DiscardPile, ProgressBar];
 const updateMethods: ((deltaTime: number) => void)[] = [];
 
 let loadingProgress = 0;
@@ -78,6 +80,16 @@ export default abstract class Game
 		await Game.loadAssets();
 
 		Game.instantiateComponent(FpsCounter);
+
+		const discardPile = Game.instantiateComponent(DiscardPile, {
+			x: app.screen.width * 0.7,
+			y: app.screen.height / 2,
+		});
+
+		Game.instantiateComponent(CardDeck, {
+			x: app.screen.width * 0.3,
+			y: app.screen.height / 2,
+		}, [undefined, discardPile]);
 	}
 
 	/**
