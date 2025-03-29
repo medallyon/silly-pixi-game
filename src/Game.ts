@@ -84,12 +84,10 @@ export default abstract class Game
 	{
 		const startTime = Date.now();
 
-		const progressBar = new ProgressBar({ width: 400, height: 40 });
-		progressBar.position.set(
-			(Game.app.screen.width - progressBar.width) / 2,
-			(Game.app.screen.height - progressBar.height) / 2
-		);
-		Game.app.stage.addChild(progressBar);
+		const progressBar = Game.instantiateComponent(ProgressBar, {
+			x: (Game.app.screen.width - 400) / 2,
+			y: (Game.app.screen.height - 40) / 2,
+		}, [{ width: 400, height: 40, text: "Loading..." }]);
 
 		// Setup a ticker for smooth progress updates during loading
 		const loadingTicker = () =>
