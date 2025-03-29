@@ -52,22 +52,23 @@ export class CardDeck extends Deck
 
 			const targetPosition = this.targetPile.getGlobalPosition();
 			const startPosition = this.topCard.getGlobalPosition();
+			const currentCard = this.topCard;
 
-			this.topCard.flip();
+			currentCard.flip();
 
-			new Tween(this.topCard)
+			new Tween(currentCard)
 				.to({
 					x: targetPosition.x - startPosition.x,
 					y: targetPosition.y - startPosition.y,
-					alpha: 0.8,
 					rotation: (Math.random() - 0.5) * Math.PI / 2
 				}, MOVE_DURATION * 1000)
 				.easing(Easing.Quadratic.Out)
 				.start()
 				.onComplete(() =>
 				{
+					this.removeTopCard();
 					this.cardCount--;
-					this.targetPile.addCard();
+					this.targetPile.addCard(currentCard);
 					this.updateCardDisplay();
 
 					resolve();

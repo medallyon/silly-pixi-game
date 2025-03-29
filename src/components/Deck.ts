@@ -54,6 +54,27 @@ export abstract class Deck extends Container
 	}
 
 	/**
+	 * Add a card to the deck.
+	 * @param card - The card to add to the deck. If not provided, a new card is created.
+	 */
+	public addCard(card?: Card): void
+	{
+		if (card)
+		{
+			if (this.topCard)
+				this.removeTopCard();
+
+			this.topCard = card;
+			this.addChild(card);
+		}
+		else
+		{
+			this.cardCount++;
+			this.updateCardDisplay();
+		}
+	}
+
+	/**
 	 * Add a new top card to the deck.
 	 * If there is already a top card, it is removed first.
 	 * If the card count is greater than 1, a bottom card is also added.
@@ -78,10 +99,20 @@ export abstract class Deck extends Container
 	 * Remove the top card from the deck.
 	 * If there is a bottom card, it is moved to the top position.
 	 */
-	public addCard(): void
+	protected removeTopCard(): void
 	{
-		this.cardCount++;
-		this.updateCardDisplay();
+		if (!this.topCard)
+			return;
+
+		this.removeChild(this.topCard);
+		this.topCard = null;
+
+		// If we have a bottom card and only one card left, remove bottom card
+		if (this.bottomCard && this.cardCount <= 1)
+		{
+			this.removeChild(this.bottomCard);
+			this.bottomCard = null;
+		}
 	}
 
 	public update(deltaTime: number): void
