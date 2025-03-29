@@ -80,7 +80,7 @@ export class Menu extends Screen
 		// Calculate angle step between each card
 		const angleStep = (this.END_ANGLE - this.START_ANGLE) / (screens.length - 1);
 		const centerX = this.getScreenCenter().x;
-		const centerY = this.height + 300;
+		const centerY = this.height + 250;
 
 		screens.forEach((screen, index) =>
 		{
