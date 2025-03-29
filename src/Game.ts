@@ -1,4 +1,5 @@
 import { Application, Container, Assets } from "pixi.js";
+import { Group } from "tweedle.js";
 
 import { FpsCounter } from "./components/FpsCounter";
 import { Card } from "./components/Card";
@@ -70,6 +71,8 @@ export default abstract class Game
 		{
 			for (const updateMethod of updateMethods)
 				updateMethod(ticker.deltaMS);
+
+			Group.shared.update(ticker.elapsedMS);
 		});
 
 		await Game.loadAssets();

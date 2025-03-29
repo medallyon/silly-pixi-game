@@ -1,5 +1,5 @@
 import { Assets, Container, Sprite, Graphics } from "pixi.js";
-import { Tween, Group, Easing } from "tweedle.js";
+import { Tween, Easing } from "tweedle.js";
 
 const FLIP_DURATION = 350;
 const CARD_WIDTH = 140;
@@ -128,10 +128,5 @@ export class Card extends Container
 			});
 
 		this.isFlipped = !this.isFlipped;
-	}
-
-	public update(deltaTime: number): void
-	{
-		Group.shared.update(deltaTime);
 	}
 }
