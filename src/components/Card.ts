@@ -90,10 +90,6 @@ export class Card extends Container
 
 		this.eventMode = 'static';
 		this.cursor = 'pointer';
-		this.onpointertap = this.flip.bind(this);
-
-		this.onmouseover = this.onPointerOver.bind(this);
-		this.onmouseout = this.onPointerOut.bind(this);
 	}
 
 	private static createRandomCardFront(): Sprite
