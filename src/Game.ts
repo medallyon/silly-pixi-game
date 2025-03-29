@@ -7,6 +7,10 @@ import { CardDeck } from "./components/CardDeck";
 import { ProgressBar } from "./components/ProgressBar";
 import { DiscardPile } from "./components/DiscardPile";
 
+const TARGET_WIDTH = 1920;
+const TARGET_HEIGHT = 1080;
+const ASPECT_RATIO = TARGET_WIDTH / TARGET_HEIGHT;
+
 const REAL_PROGRESS_PERCENT = 0.5; // 50% of the progress bar is real loading
 const MIN_LOADING_TIME = 1; // Minimum loading time in seconds
 
@@ -25,6 +29,7 @@ interface ComponentConstructor
 export default abstract class Game
 {
 	public static app: Application;
+	private static orientationOverlay: HTMLDivElement;
 
 	/**
 	 * Register a method to be called on every frame update.
@@ -61,13 +66,88 @@ export default abstract class Game
 		return instance;
 	}
 
+	private static onResize()
+	{
+		const { app } = this;
+		let w, h;
+
+		if (window.innerWidth / window.innerHeight >= ASPECT_RATIO)
+		{
+			w = window.innerHeight * ASPECT_RATIO;
+			h = window.innerHeight;
+		} else
+		{
+			w = window.innerWidth;
+			h = window.innerWidth / ASPECT_RATIO;
+		}
+
+		app.canvas.style!.width = `${w}px`;
+		app.canvas.style!.height = `${h}px`;
+
+		// Update component positions
+		for (const child of app.stage.children)
+		{
+			if (child instanceof DiscardPile)
+				child.position.set(app.screen.width * 0.7, app.screen.height / 2);
+			else if (child instanceof CardDeck)
+				child.position.set(app.screen.width * 0.3, app.screen.height / 2);
+			else if (child instanceof Dialogue)
+				child.position.set(app.screen.width / 2, app.screen.height * 0.8);
+			else if (child instanceof ProgressBar)
+			{
+				child.position.set(
+					(app.screen.width - 400) / 2,
+					(app.screen.height - 40) / 2
+				);
+			}
+		}
+	}
+
+	private static createOrientationOverlay()
+	{
+		const overlay = document.getElementById("orientation-overlay") as HTMLDivElement;
+		this.orientationOverlay = overlay;
+
+		// Add orientation change listener
+		window.addEventListener('orientationchange', () =>
+		{
+			setTimeout(() => this.handleOrientationChange(), 100);
+		});
+	}
+
+	private static handleOrientationChange()
+	{
+		const isPortrait = window.matchMedia("(orientation: portrait)").matches;
+		if (isPortrait)
+		{
+			this.app.stop();
+			this.orientationOverlay.style.display = 'flex';
+		} else
+		{
+			this.app.start();
+			this.orientationOverlay.style.display = 'none';
+		}
+	}
+
 	public static async initialize()
 	{
 		const app = new Application();
 		this.app = app;
 
-		await app.init({ background: "#222", resizeTo: window, roundPixels: true });
+		await app.init({
+			background: "#222",
+			width: TARGET_WIDTH,
+			height: TARGET_HEIGHT,
+			roundPixels: true
+		});
+
+		this.createOrientationOverlay();
+		await this.requestLandscapeOrientation();
+		this.handleOrientationChange(); // Initial check
+
 		document.getElementById("pixi-container")!.appendChild(app.canvas);
+		window.addEventListener("resize", this.onResize.bind(this));
+		this.onResize();
 
 		app.ticker.add((ticker) =>
 		{
@@ -90,6 +170,19 @@ export default abstract class Game
 			x: app.screen.width * 0.3,
 			y: app.screen.height / 2,
 		}, [undefined, discardPile]);
+
+	private static async requestLandscapeOrientation()
+	{
+		if ('screen' in window && 'orientation' in screen)
+		{
+			try
+			{
+				await screen.orientation.lock('landscape');
+			} catch (err)
+			{
+				console.warn('Failed to lock orientation:', err);
+			}
+		}
 	}
 
 	/**
