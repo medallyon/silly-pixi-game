@@ -69,7 +69,7 @@ export default abstract class Game
 		app.ticker.add((ticker) =>
 		{
 			for (const updateMethod of updateMethods)
-				updateMethod(ticker.deltaTime);
+				updateMethod(ticker.deltaMS);
 		});
 
 		await Game.loadAssets();

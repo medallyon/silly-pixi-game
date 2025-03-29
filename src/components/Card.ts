@@ -1,7 +1,7 @@
 import { Assets, Container, Sprite, Graphics } from "pixi.js";
 import { Tween, Group, Easing } from "tweedle.js";
 
-const FLIP_DURATION = 35;
+const FLIP_DURATION = 350;
 const CARD_WIDTH = 140;
 const CARD_HEIGHT = 190;
 const CORNER_RADIUS = 10;
