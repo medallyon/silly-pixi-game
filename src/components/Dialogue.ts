@@ -12,11 +12,22 @@ export class Dialogue extends Container
 	private static readonly BUBBLE_RADIUS = 15;
 	private static readonly TAIL_SIZE = 20;
 	private static readonly VERTICAL_OFFSET = 60;
+	private static readonly CHARS_PER_SECOND = 50;
 
 	private emojis: Map<string, Container> = new Map();
 	private avatars: Map<string, Sprite> = new Map();
 	private currentLine = 0;
 	private dialogueData?: DialogueData;
+
+	// Animation variables
+	private isAnimating = false;
+	private elapsedTime = 0;
+	private visibleCharacters = 0;
+	private currentTextItems: Array<{
+		element: Text | Container,
+		originalText?: string,
+		length: number
+	}> = [];
 
 	constructor()
 	{
@@ -24,7 +35,7 @@ export class Dialogue extends Container
 
 		this.eventMode = 'static';
 		this.cursor = 'pointer';
-		this.onpointerdown = this.showNextLine.bind(this);
+		this.onpointerdown = this.handleTap.bind(this);
 
 		this.pivot.set(Dialogue.TEXT_WIDTH / 2, Dialogue.LINE_HEIGHT / 2);
 	}
@@ -221,7 +232,6 @@ export class Dialogue extends Container
 	private createTextWithEmojis(text: string): Container
 	{
 		const container = new Container();
-		let currentY = 0;
 		const maxWidth = Dialogue.TEXT_WIDTH - Dialogue.PADDING * 2;
 		const TEXT_BASELINE_OFFSET = 4;
 
@@ -263,9 +273,13 @@ export class Dialogue extends Container
 			}
 		}
 
+
+		this.currentTextItems = [];
+
 		// Second pass: layout words with wrapping
 		let line: Array<{ type: 'text' | 'emoji', content: string | Container, width: number }> = [];
 		let lineWidth = 0;
+		let currentY = 0;
 
 		const addLine = () =>
 		{
@@ -277,19 +291,32 @@ export class Dialogue extends Container
 					const emoji = item.content as Container;
 					emoji.x = x;
 					emoji.y = currentY - TEXT_BASELINE_OFFSET; // Adjust emoji position up slightly
+					emoji.visible = false;
 					container.addChild(emoji);
+					this.currentTextItems.push({
+						element: emoji,
+						length: 1
+					});
 				} else
 				{
 					const text = new Text({
-						text: item.content as string,
+						text: '',
 						style: { fontSize: 16, fill: 0xFFFFFF }
 					});
 					text.x = x;
 					text.y = currentY;
+					text.visible = true;
 					container.addChild(text);
+
+					this.currentTextItems.push({
+						element: text,
+						originalText: item.content as string,
+						length: (item.content as string).length
+					});
 				}
 				x += item.width;
 			}
+
 			currentY += Dialogue.LINE_HEIGHT / 2;
 			line = [];
 			lineWidth = 0;
@@ -299,6 +326,7 @@ export class Dialogue extends Container
 		{
 			if (lineWidth + word.width > maxWidth && line.length > 0)
 				addLine();
+
 			line.push(word);
 			lineWidth += word.width;
 		}
@@ -306,6 +334,89 @@ export class Dialogue extends Container
 		if (line.length > 0)
 			addLine();
 
+		this.visibleCharacters = 0;
+		this.elapsedTime = 0;
+		this.isAnimating = true;
+
 		return container;
+	}
+
+	private handleTap(): void
+	{
+		if (this.isAnimating)
+		{
+			// Skip animation
+			this.visibleCharacters = Infinity;
+			this.updateTextVisibility();
+			this.isAnimating = false;
+		} else
+			this.showNextLine();
+	}
+
+	private updateTextVisibility(): void
+	{
+		let totalChars = 0;
+		let totalAvailableChars = 0;
+
+		// First count total available characters
+		for (const item of this.currentTextItems)
+			totalAvailableChars += item.length;
+
+		// Then update visibility
+		for (const item of this.currentTextItems)
+		{
+			if (item.element instanceof Text && item.originalText)
+			{
+				const text = item.element;
+				if (totalChars + item.length <= this.visibleCharacters)
+				{
+					text.visible = true;
+					text.text = item.originalText;
+					totalChars += item.length;
+				} else if (totalChars >= this.visibleCharacters)
+				{
+					text.visible = false;
+				} else
+				{
+					text.visible = true;
+					const visibleLength = this.visibleCharacters - totalChars;
+					text.text = item.originalText.slice(0, visibleLength);
+					totalChars = this.visibleCharacters;
+				}
+			} else
+			{
+				// Handle emojis
+				item.element.visible = totalChars < this.visibleCharacters;
+				if (item.element.visible)
+					totalChars += 1;
+			}
+		}
+
+		// Only stop animating when we've shown all characters
+		if (this.visibleCharacters >= totalAvailableChars)
+		{
+			this.isAnimating = false;
+
+			// Make sure all text is fully visible
+			for (const item of this.currentTextItems)
+			{
+				item.element.visible = true;
+				if (item.element instanceof Text && item.originalText)
+					item.element.text = item.originalText;
+			}
+		}
+	}
+
+	public update(deltaTime: number): void
+	{
+		if (!this.isAnimating)
+			return;
+
+		// Convert deltaTime from milliseconds to seconds
+		this.elapsedTime += deltaTime / 1000;
+		const targetChars = Math.floor(this.elapsedTime * Dialogue.CHARS_PER_SECOND);
+
+		this.visibleCharacters = targetChars;
+		this.updateTextVisibility();
 	}
 }
