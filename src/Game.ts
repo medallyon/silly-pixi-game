@@ -1,4 +1,4 @@
-import { Application, Container, Assets } from "pixi.js";
+import { Application, Container, Assets, ExtensionType, Texture, extensions } from "pixi.js";
 import { Group } from "tweedle.js";
 
 import { FpsCounter } from "./components/FpsCounter";
@@ -6,6 +6,7 @@ import { Card } from "./components/Card";
 import { CardDeck } from "./components/CardDeck";
 import { ProgressBar } from "./components/ProgressBar";
 import { DiscardPile } from "./components/DiscardPile";
+import { Dialogue } from "./components/Dialogue";
 
 const TARGET_WIDTH = 1920;
 const TARGET_HEIGHT = 1080;
@@ -14,7 +15,9 @@ const ASPECT_RATIO = TARGET_WIDTH / TARGET_HEIGHT;
 const REAL_PROGRESS_PERCENT = 0.5; // 50% of the progress bar is real loading
 const MIN_LOADING_TIME = 1; // Minimum loading time in seconds
 
-const components = [FpsCounter, Card, CardDeck, DiscardPile, ProgressBar];
+const DIALOGUE_DATA_URL = "https://private-624120-softgamesassignment.apiary-mock.com/v2/magicwords";
+
+const components = [FpsCounter, Card, CardDeck, DiscardPile, ProgressBar, Dialogue];
 const updateMethods: ((deltaTime: number) => void)[] = [];
 
 let loadingProgress = 0;
@@ -24,6 +27,27 @@ interface ComponentConstructor
 	new(...args: unknown[]): Container;
 	gatherAssets?(): string[];
 	update?(deltaTime?: number): void;
+}
+
+function setupAssetParser()
+{
+	const imageDelivery = {
+		extension: ExtensionType.LoadParser,
+		test: (url: string) => url.startsWith('https://api.dicebear.com/'),
+		async load(src: string)
+		{
+			return new Promise((resolve, reject) =>
+			{
+				const img = new Image();
+				img.crossOrigin = 'anonymous';
+				img.onload = () => resolve(Texture.from(img));
+				img.onerror = reject;
+				img.src = src;
+			});
+		},
+	};
+
+	extensions.add(imageDelivery);
 }
 
 export default abstract class Game
@@ -149,6 +173,8 @@ export default abstract class Game
 		window.addEventListener("resize", this.onResize.bind(this));
 		this.onResize();
 
+		setupAssetParser();
+
 		app.ticker.add((ticker) =>
 		{
 			for (const updateMethod of updateMethods)
@@ -170,6 +196,23 @@ export default abstract class Game
 			x: app.screen.width * 0.3,
 			y: app.screen.height / 2,
 		}, [undefined, discardPile]);
+
+		const dialogue = Game.instantiateComponent(Dialogue, {
+			x: app.screen.width / 2,
+			y: app.screen.height * 0.8
+		});
+
+		// Fetch dialogue data from an endpoint
+		try
+		{
+			const response = await fetch(DIALOGUE_DATA_URL);
+			const dialogueData = await response.json();
+			await dialogue.loadDialogue(dialogueData);
+		} catch (error)
+		{
+			console.error('Failed to load dialogue:', error);
+		}
+	}
 
 	private static async requestLandscapeOrientation()
 	{
