@@ -128,6 +128,7 @@ export default abstract class Game
 			this.app.start();
 			this.orientationOverlay.style.display = 'none';
 			this.canvas.requestFullscreen();
+			window.scrollTo(0, 1);
 		}
 	}
 
