@@ -127,6 +127,7 @@ export default abstract class Game
 		{
 			this.app.start();
 			this.orientationOverlay.style.display = 'none';
+			this.canvas.requestFullscreen();
 		}
 	}
 
@@ -143,6 +144,7 @@ export default abstract class Game
 		});
 
 		this.canvas = app.canvas;
+
 		this.createOrientationOverlay();
 		await this.requestLandscapeOrientation();
 		this.handleOrientationChange();
