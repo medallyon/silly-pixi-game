@@ -1,4 +1,4 @@
-import { Text } from "pixi.js";
+import { Text, Assets, Sprite } from "pixi.js";
 import { Screen } from "./Screen";
 import Game from "../Game";
 import { AceOfShadows } from "./AceOfShadows";
@@ -19,6 +19,13 @@ export class Menu extends Screen
 	constructor()
 	{
 		super();
+
+		const background = Sprite.from(Assets.get("bg-green"));
+		background.width = Game.app.screen.width;
+		background.height = Game.app.screen.height;
+		background.alpha = 0.8;
+		this.addChild(background);
+
 		this.loadFontAndCreateUI();
 	}
 

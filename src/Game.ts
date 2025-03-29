@@ -1,4 +1,4 @@
-import { Application, Container, ExtensionType, Texture, extensions } from "pixi.js";
+import { Application, Assets, Container, ExtensionType, Texture, extensions } from "pixi.js";
 import { Group } from "tweedle.js";
 import { Menu } from "./screens/Menu";
 import { FpsCounter } from "./components/FpsCounter";
@@ -153,6 +153,19 @@ export default abstract class Game
 		this.onResize();
 
 		setupAssetParser();
+
+		Assets.addBundle('ui-kit', [
+			{ alias: "font-ui", src: "/assets/fonts/Gluten-VariableFont.ttf" },
+			{ alias: "button", src: "/assets/cozy-garden-kit/big-bar.png" },
+			{ alias: "button-pressed", src: "/assets/cozy-garden-kit/big-bar-pressed.png" },
+			{ alias: "button-back", src: "/assets/cozy-garden-kit/button-back.png" },
+			{ alias: "button-back-pressed", src: "/assets/cozy-garden-kit/button-back-pressed.png" },
+			{ alias: "bg-blue", src: "/assets/cozy-garden-kit/bg-blue.png" },
+			{ alias: "bg-green", src: "/assets/cozy-garden-kit/bg-green.png" },
+			{ alias: "bg-pink", src: "/assets/cozy-garden-kit/bg-pink.png" },
+			{ alias: "bg-yellow", src: "/assets/cozy-garden-kit/bg-yellow.png" },
+		]);
+		await Assets.loadBundle('ui-kit');
 
 		app.ticker.add((ticker) =>
 		{
