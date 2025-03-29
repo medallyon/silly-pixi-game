@@ -1,13 +1,11 @@
-import { Container, Graphics, Text } from "pixi.js";
 import { Screen } from "./Screen";
 import { Fire } from "../components/Fire";
-import { Tween, Easing } from "tweedle.js";
 import Game from "../Game";
+import { BackButton } from "../components/BackButton";
 
 export class PhoenixFlame extends Screen
 {
 	private fire?: Fire;
-	private backButton?: Container;
 	private targetPosition = { x: 0, y: 0 };
 	private readonly LERP_FACTOR = 0.1;
 	private cleanupCallbacks?: {
@@ -17,57 +15,7 @@ export class PhoenixFlame extends Screen
 	constructor()
 	{
 		super();
-		this.createBackButton();
-	}
-
-	private createBackButton(): void
-	{
-		const button = new Container();
-		button.eventMode = 'static';
-		button.cursor = 'pointer';
-
-		const bg = new Graphics()
-			.roundRect(0, 0, 120, 40, 8)
-			.fill({ color: 0x666666 });
-
-		const label = new Text({
-			text: "Back",
-			style: {
-				fontFamily: "Arial",
-				fontSize: 20,
-				fill: 0xFFFFFF,
-			}
-		});
-		label.anchor.set(0.5);
-		label.position.set(60, 20);
-
-		button.addChild(bg, label);
-		button.position.set(20, 20);
-
-		button.on('pointerover', () =>
-		{
-			new Tween(button.scale)
-				.to({ x: 1.1, y: 1.1 }, 100)
-				.easing(Easing.Back.Out)
-				.start();
-		});
-
-		button.on('pointerout', () =>
-		{
-			new Tween(button.scale)
-				.to({ x: 1, y: 1 }, 100)
-				.easing(Easing.Back.Out)
-				.start();
-		});
-
-		button.on('pointertap', () =>
-		{
-			this.hide();
-			Game.showMenu();
-		});
-
-		this.backButton = button;
-		this.addChild(button);
+		this.addChild(new BackButton());
 	}
 
 	private setupGlobalPointerEvents(): void

@@ -1,14 +1,16 @@
-import { Assets, Container, Graphics, Text } from "pixi.js";
+import { Text } from "pixi.js";
 import { Screen } from "./Screen";
 import Game from "../Game";
 import { AceOfShadows } from "./AceOfShadows";
 import { MagicWords } from "./MagicWords";
 import { PhoenixFlame } from "./PhoenixFlame";
+import { Button } from "../components/Button";
+import { BackButton } from "../components/BackButton";
 import { Tween, Easing } from "tweedle.js";
 
 export class Menu extends Screen
 {
-	private buttons: Container[] = [];
+	private buttons: Button[] = [];
 	private currentScreen?: Screen;
 	private readonly BUTTON_WIDTH = 300;
 	private readonly BUTTON_HEIGHT = 60;
@@ -17,7 +19,6 @@ export class Menu extends Screen
 	constructor()
 	{
 		super();
-
 		this.loadFontAndCreateUI();
 	}
 
@@ -54,56 +55,6 @@ export class Menu extends Screen
 		this.addChild(title);
 	}
 
-	private createButton(text: string, y: number, onClick: () => void): Container
-	{
-		const button = new Container();
-		button.eventMode = 'static';
-		button.cursor = 'pointer';
-
-		const bg = new Graphics()
-			.roundRect(0, 0, this.BUTTON_WIDTH, this.BUTTON_HEIGHT, 10)
-			.fill({ color: 0x666666 });
-
-		const label = new Text({
-			text,
-			style: {
-				fontFamily: "Arial",
-				fontSize: 24,
-				fill: 0xFFFFFF,
-				align: "center"
-			}
-		});
-		label.anchor.set(0.5);
-		label.position.set(this.BUTTON_WIDTH / 2, this.BUTTON_HEIGHT / 2);
-
-		button.addChild(bg, label);
-		button.position.set(
-			this.getScreenCenter().x - this.BUTTON_WIDTH / 2,
-			y
-		);
-
-		button.on('pointerover', () =>
-		{
-			new Tween(button.scale)
-				.to({ x: 1.1, y: 1.1 }, 100)
-				.easing(Easing.Back.Out)
-				.start();
-		});
-
-		button.on('pointerout', () =>
-		{
-			new Tween(button.scale)
-				.to({ x: 1, y: 1 }, 100)
-				.easing(Easing.Back.Out)
-				.start();
-		});
-
-		button.on('pointertap', onClick);
-		this.buttons.push(button);
-		this.addChild(button);
-		return button;
-	}
-
 	private createButtons(): void
 	{
 		let y = this.getScreenCenter().y - (this.BUTTON_HEIGHT * 2 + this.BUTTON_SPACING * 3) / 2;
@@ -117,7 +68,21 @@ export class Menu extends Screen
 
 		for (const { name, screen } of screens)
 		{
-			this.createButton(name, y, () => this.switchToScreen(screen));
+			const button = new Button({
+				text: name,
+				width: this.BUTTON_WIDTH,
+				height: this.BUTTON_HEIGHT,
+				fontSize: 24,
+				onClick: () => this.switchToScreen(screen)
+			});
+
+			button.position.set(
+				this.getScreenCenter().x,
+				y
+			);
+
+			this.buttons.push(button);
+			this.addChild(button);
 			y += this.BUTTON_HEIGHT + this.BUTTON_SPACING;
 		}
 	}
@@ -145,8 +110,8 @@ export class Menu extends Screen
 			dialogue.show();
 			Game.app.stage.addChild(dialogue);
 
-			// Create a back button for combined view
-			const button = this.createButton("Back to Menu", 20, () =>
+			// Create a back button for combined view using Button component
+			const backButton = new BackButton(() =>
 			{
 				fire.hide();
 				cards.hide();
@@ -154,9 +119,11 @@ export class Menu extends Screen
 				Game.app.stage.removeChild(fire);
 				Game.app.stage.removeChild(cards);
 				Game.app.stage.removeChild(dialogue);
-				Game.app.stage.removeChild(button);
+				Game.app.stage.removeChild(backButton);
 				this.show();
 			});
+
+			Game.app.stage.addChild(backButton);
 			this.hide();
 			return;
 		}
