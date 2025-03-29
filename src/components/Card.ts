@@ -2,10 +2,10 @@ import { Howl } from "howler";
 import { Container, Sprite, Graphics } from "pixi.js";
 import { Tween, Easing } from "tweedle.js";
 
-const FLIP_DURATION = 350;
-const CARD_WIDTH = 140;
-const CARD_HEIGHT = 190;
-const CORNER_RADIUS = 10;
+export const FLIP_DURATION = 350;
+export const CARD_WIDTH = 140;
+export const CARD_HEIGHT = 190;
+export const CORNER_RADIUS = 10;
 const BOUNCE_HEIGHT = [40, 60]; // pixels to bounce up on flip
 const SKEW_AMOUNT = [0.25, 0.35]; // radians to skew on flip
 
@@ -14,8 +14,8 @@ export class Card extends Container
 	private static suits = ['hearts', 'diamonds', 'clubs', 'spades'];
 	private static values = new Array(13).fill(0).map((_, i) => (i + 1).toString()); // 1-13
 
-	private frontSprite: Sprite;
-	private backSprite: Sprite;
+	protected frontSprite: Sprite;
+	protected backSprite: Sprite;
 	private isFlipped = false;
 	private isAnimating = false;
 	private scaleTween: Tween<{ x: number, y: number }> | null = null;

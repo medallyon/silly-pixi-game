@@ -9,11 +9,18 @@ const DIALOGUE_DATA_URL = "https://private-624120-softgamesassignment.apiary-moc
 export class MagicWords extends Screen
 {
 	private dialogue?: Dialogue;
+	private dialoguePosition: { x: number, y: number };
 	private loadingBar?: ProgressBar;
 
-	constructor()
+	constructor(dialoguePosition: { x: number | undefined, y: number | undefined })
 	{
 		super();
+
+		this.dialoguePosition = {
+			x: dialoguePosition?.x || Game.app.screen.width / 2,
+			y: dialoguePosition?.y || Game.app.screen.height / 2
+		};;
+
 		const backButton = new BackButton(this.hide.bind(this));
 		backButton.position.set(30, 70); // Position under FPS counter
 		this.addChild(backButton);
@@ -30,16 +37,16 @@ export class MagicWords extends Screen
 			text: "Loading dialogue..."
 		});
 		this.loadingBar.position.set(
-			Game.app.screen.width / 2 - 150,
-			Game.app.screen.height / 2 - 20
+			this.dialoguePosition.x - 150,
+			this.dialoguePosition.y - 20
 		);
 		this.addChild(this.loadingBar);
 		this.loadingBar.progress = 0;
 
 		this.dialogue = new Dialogue();
 		this.dialogue.position.set(
-			Game.app.screen.width / 2,
-			Game.app.screen.height / 2
+			this.dialoguePosition.x,
+			this.dialoguePosition.y
 		);
 		this.addChild(this.dialogue);
 		this.dialogue.visible = false;

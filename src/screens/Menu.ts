@@ -4,17 +4,18 @@ import Game from "../Game";
 import { AceOfShadows } from "./AceOfShadows";
 import { MagicWords } from "./MagicWords";
 import { PhoenixFlame } from "./PhoenixFlame";
-import { Button } from "../components/Button";
 import { BackButton } from "../components/BackButton";
+import { MenuCard } from "../components/MenuCard";
 import { Tween, Easing } from "tweedle.js";
 
 export class Menu extends Screen
 {
-	private buttons: Button[] = [];
+	private cards: MenuCard[] = [];
 	private currentScreen?: Screen;
-	private readonly BUTTON_WIDTH = 300;
-	private readonly BUTTON_HEIGHT = 60;
-	private readonly BUTTON_SPACING = 20;
+	private readonly RADIUS = 450;
+	private readonly START_ANGLE = -Math.PI * 0.65;
+	private readonly END_ANGLE = -Math.PI * 0.35;
+	private readonly CARD_ANGLE_OFFSET = Math.PI / 2; // Rotate cards 90 degrees to point outwards
 	private static combinedScreens?: {
 		fire: PhoenixFlame;
 		cards: AceOfShadows;
@@ -47,7 +48,7 @@ export class Menu extends Screen
 		}
 
 		this.createTitle();
-		this.createButtons();
+		this.createCards();
 	}
 
 	private createTitle(): void
@@ -56,21 +57,19 @@ export class Menu extends Screen
 			text: "SOFTGAMES",
 			style: {
 				fontFamily: "RubikBubbles, Arial",
-				fontSize: 100,
+				fontSize: 150,
 				fill: 0xFFFFFF,
 				align: "center"
 			}
 		});
 
 		title.anchor.set(0.5);
-		title.position.set(this.getScreenCenter().x, 200);
+		title.position.set(this.getScreenCenter().x, this.getScreenCenter().y - 100);
 		this.addChild(title);
 	}
 
-	private createButtons(): void
+	private createCards(): void
 	{
-		let y = this.getScreenCenter().y - (this.BUTTON_HEIGHT * 2 + this.BUTTON_SPACING * 3) / 2;
-
 		const screens = [
 			{ name: "Ace of Shadows", screen: AceOfShadows },
 			{ name: "Magic Words", screen: MagicWords },
@@ -78,25 +77,24 @@ export class Menu extends Screen
 			{ name: "Combined Demo", screen: null }
 		];
 
-		for (const { name, screen } of screens)
+		// Calculate angle step between each card
+		const angleStep = (this.END_ANGLE - this.START_ANGLE) / (screens.length - 1);
+		const centerX = this.getScreenCenter().x;
+		const centerY = this.height + 300;
+
+		screens.forEach((screen, index) =>
 		{
-			const button = new Button({
-				text: name,
-				width: this.BUTTON_WIDTH,
-				height: this.BUTTON_HEIGHT,
-				fontSize: 24,
-				onClick: () => this.switchToScreen(screen)
-			});
+			const angle = this.START_ANGLE + (angleStep * index);
+			const x = centerX + Math.cos(angle) * this.RADIUS;
+			const y = centerY + Math.sin(angle) * this.RADIUS;
 
-			button.position.set(
-				this.getScreenCenter().x,
-				y
-			);
+			const card = new MenuCard(screen.name, () => this.switchToScreen(screen.screen));
+			card.position.set(x, y);
+			card.rotation = angle + this.CARD_ANGLE_OFFSET; // Add offset to make cards point outwards
 
-			this.buttons.push(button);
-			this.addChild(button);
-			y += this.BUTTON_HEIGHT + this.BUTTON_SPACING;
-		}
+			this.cards.push(card);
+			this.addChild(card);
+		});
 	}
 
 	private switchToScreen(ScreenClass: (new () => Screen) | null): void
@@ -119,7 +117,8 @@ export class Menu extends Screen
 			cards.show();
 			Game.app.stage.addChild(cards);
 
-			const dialogue = new MagicWords();
+			const center = this.getScreenCenter();
+			const dialogue = new MagicWords({ x: center.x, y: center.y + 200 });
 			dialogue.show();
 			Game.app.stage.addChild(dialogue);
 
@@ -140,8 +139,10 @@ export class Menu extends Screen
 					Menu.combinedScreens = undefined;
 				}
 			});
+
 			backButton.position.set(30, 70);
 			Game.app.stage.addChild(backButton);
+
 			this.hide();
 			return;
 		}
@@ -156,13 +157,19 @@ export class Menu extends Screen
 	public show(): void
 	{
 		this.visible = true;
-		for (const button of this.buttons)
+		for (const card of this.cards)
 		{
-			button.scale.set(0);
-			new Tween(button.scale)
-				.to({ x: 1, y: 1 }, 300)
+			card.scale.set(0);
+			card.alpha = 0;
+
+			// Animate both scale and alpha for a nice fade-in effect
+			new Tween(card)
+				.to({
+					alpha: 1,
+					scale: { x: 1, y: 1 }
+				}, 500)
 				.easing(Easing.Back.Out)
-				.delay(this.buttons.indexOf(button) * 100)
+				.delay(this.cards.indexOf(card) * 100)
 				.start();
 		}
 	}
